@@ -1130,6 +1130,35 @@ export function map_to_curve_simple_swu_9mod16(t: bigint[] | Fp2): [Fp2, Fp2, Fp
   return [numerator, y, denominator];
 }
 
+export function isogenyMapG1(xyz: [Fp, Fp, Fp]): [Fp, Fp, Fp] {
+  // prettier-ignore
+  const x = xyz[0], y = xyz[1], z = xyz[2];
+  const zz = z.multiply(z);
+  const zzz = zz.multiply(z);
+  const zPowers = [z, zz, zzz];
+  // x-numerator, x-denominator, y-numerator, y-denominator
+  const mapped = [Fp.ZERO, Fp.ZERO, Fp.ZERO, Fp.ZERO];
+
+  // Horner Polynomial Evaluation
+  for (let i = 0; i < ISOGENY_11_COEFFICIENTS.length; i++) {
+    const k_i = ISOGENY_11_COEFFICIENTS[i];
+    mapped[i] = k_i.slice(-1)[0];
+    const arr = k_i.slice(0, -1).reverse();
+    for (let j = 0; j < arr.length; j++) {
+      const k_i_j = arr[j];
+      mapped[i] = mapped[i].multiply(x).add(zPowers[j].multiply(k_i_j));
+    }
+  }
+
+  mapped[2] = mapped[2].multiply(y); // y-numerator * y
+  mapped[3] = mapped[3].multiply(z); // y-denominator * z
+
+  const z2 = mapped[1].multiply(mapped[3]);
+  const x2 = mapped[0].multiply(mapped[3]);
+  const y2 = mapped[1].multiply(mapped[2]);
+  return [x2, y2, z2];
+}
+
 // 3-isogeny map from E' to E
 // Converts from Jacobi (xyz) to Projective (xyz) coordinates.
 // https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-hash-to-curve-11#appendix-E.3
